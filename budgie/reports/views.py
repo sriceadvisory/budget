@@ -1,3 +1,16 @@
-from django.shortcuts import render
+from django.shortcuts import render 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+
 
 # Create your views here.
+
+class MonthlyReportView(APIView):
+    def get(self, request):
+        return Response({'message': 'Monthly report'})
+
+class AnnualReportView(APIView):
+    def get(self, request):
+        return Response({'message': 'Annual report'})
