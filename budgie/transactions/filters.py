@@ -4,4 +4,4 @@ from .models import Transaction
 class TransactionFilter(FilterSet):
     class Meta:
         model = Transaction
-        fields = ['category', 'date']
+        fields = ['category', 'date', 'transaction_type']
