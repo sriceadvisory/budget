@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budgie — Demo UI</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: .5px; }
+    header span { font-size: .8rem; opacity: .65; }
+
+    .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+
+    /* ── Summary ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .summary-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      padding: 16px;
+      text-align: center;
+    }
+    .summary-card .label { font-size: .75rem; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+    .summary-card .value { font-size: 1.4rem; font-weight: 700; margin-top: 4px; }
+    .summary-card .value.income  { color: #16a34a; }
+    .summary-card .value.expense { color: #dc2626; }
+    .summary-card .value.positive { color: #16a34a; }
+    .summary-card .value.negative { color: #dc2626; }
+    .summary-card .value.zero    { color: #6b7280; }
+
+    /* ── Form elements ── */
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    label { font-size: .78rem; font-weight: 500; color: #555; }
+    input, textarea, select {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: .9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: #4f46e5; }
+    textarea { resize: vertical; min-height: 60px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Buttons ── */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: .85rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-danger  { background: #ef4444; color: #fff; }
+    .btn-ghost   { background: transparent; color: #555; border: 1px solid #ddd; }
+    .btn-sm      { padding: 4px 10px; font-size: .78rem; }
+
+    /* ── Filter bar ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-row input { flex: 1; min-width: 120px; }
+
+    /* ── Transaction list ── */
+    .tx-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #fff;
+    }
+    .tx-body { flex: 1; min-width: 0; }
+    .tx-title {
+      font-weight: 600;
+      font-size: .93rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tx-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: .7rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 99px;
+    }
+    .badge-income  { background: #dcfce7; color: #166534; }
+    .badge-expense { background: #fee2e2; color: #b91c1c; }
+    .badge-cat     { background: #e0f2fe; color: #0369a1; }
+    .tx-date { font-size: .72rem; color: #888; }
+    .tx-amount {
+      font-size: 1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      text-align: right;
+      align-self: center;
+    }
+    .tx-amount.income  { color: #16a34a; }
+    .tx-amount.expense { color: #dc2626; }
+
+    /* ── Category list ── */
+    .cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+      align-items: center;
+    }
+    .pagination span { font-size: .82rem; color: #666; }
+
+    /* ── Alerts ── */
+    .alert {
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: .85rem;
+      margin-bottom: 12px;
+    }
+    .alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .alert-ok    { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* ── Login ── */
+    .login-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 56px);
+    }
+    .login-card { width: 100%; max-width: 360px; }
+    .login-card h2 { font-size: 1.15rem; margin-bottom: 20px; text-align: center; }
+
+    /* ── Logout ── */
+    .logout-btn {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.4);
+      font-size: .78rem;
+      padding: 4px 12px;
+    }
+
+    /* ── Collapsible section ── */
+    .section-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-toggle h2 { margin-bottom: 0; }
+    .section-body { margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+{% verbatim %}
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const API = (typeof window !== 'undefined' ? window.location.origin : '') + '/api';
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function authHeaders(token) {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+}
+
+function fmt(amount) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+}
+
+// ── Components ─────────────────────────────────────────────────────────────
+
+function Alert({ msg, type }) {
+  if (!msg) return null;
+  return <div className={`alert alert-${type}`}>{msg}</div>;
+}
+
+function LoginPage({ onLogin }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Invalid credentials');
+      }
+      const data = await res.json();
+      onLogin(data.access, data.refresh, username);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="login-wrap">
+      <div className="card login-card">
+        <h2>Sign in to Budgie</h2>
+        <Alert msg={error} type="error" />
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Username</label>
+            <input value={username} onChange={e => setUsername(e.target.value)} required autoFocus />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          </div>
+          <button className="btn-primary" style={{width:'100%', marginTop:4}} disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function SummaryBar({ transactions }) {
+  const income  = transactions.filter(t => t.transaction_type === 'income').reduce((s, t) => s + parseFloat(t.amount), 0);
+  const expense = transactions.filter(t => t.transaction_type === 'expense').reduce((s, t) => s + parseFloat(t.amount), 0);
+  const net     = income - expense;
+  const netClass = net > 0 ? 'positive' : net < 0 ? 'negative' : 'zero';
+
+  return (
+    <div className="summary-grid">
+      <div className="summary-card">
+        <div className="label">Income</div>
+        <div className="value income">{fmt(income)}</div>
+      </div>
+      <div className="summary-card">
+        <div className="label">Expenses</div>
+        <div className="value expense">{fmt(expense)}</div>
+      </div>
+      <div className="summary-card">
+        <div className="label">Net</div>
+        <div className={`value ${netClass}`}>{fmt(net)}</div>
+      </div>
+    </div>
+  );
+}
+
+function CreateTransactionForm({ token, categories, onCreated }) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [description, setDesc]  = useState('');
+  const [category, setCategory] = useState('');
+  const [txType, setTxType]     = useState('expense');
+  const [amount, setAmount]     = useState('');
+  const [date, setDate]         = useState(today);
+  const [msg, setMsg]           = useState('');
+  const [msgType, setMsgType]   = useState('ok');
+  const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    if (categories.length && !category) setCategory(categories[0].id);
+  }, [categories]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    setMsg('');
+    try {
+      const res = await fetch(`${API}/transactions/`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          description,
+          category,
+          transaction_type: txType,
+          amount: parseFloat(amount),
+          date,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const detail = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(' | ');
+        throw new Error(detail || 'Failed to create transaction');
+      }
+      setMsg('Transaction added!');
+      setMsgType('ok');
+      setDesc('');
+      setAmount('');
+      setDate(today);
+      onCreated();
+    } catch (err) {
+      setMsg(err.message);
+      setMsgType('error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <h2>New Transaction</h2>
+      <Alert msg={msg} type={msgType} />
+      <form onSubmit={handleSubmit}>
+        <div className="field">
+          <label>Description</label>
+          <input value={description} onChange={e => setDesc(e.target.value)} required placeholder="e.g. Grocery run" />
+        </div>
+        <div className="row">
+          <div className="field">
+            <label>Category</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} required>
+              {categories.length === 0
+                ? <option value="">— no categories yet —</option>
+                : categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+              }
+            </select>
+          </div>
+          <div className="field">
+            <label>Type</label>
+            <select value={txType} onChange={e => setTxType(e.target.value)}>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+        </div>
+        <div className="row">
+          <div className="field">
+            <label>Amount ($)</label>
+            <input type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>Date</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} required />
+          </div>
+        </div>
+        <button className="btn-primary" disabled={loading || !category}>
+          {loading ? 'Adding…' : 'Add Transaction'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function TransactionItem({ tx, token, catMap, onRefresh }) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteTransaction() {
+    if (!confirm(`Delete "${tx.description || 'this transaction'}"?`)) return;
+    setDeleting(true);
+    try {
+      await fetch(`${API}/transactions/${tx.id}/`, {
+        method: 'DELETE',
+        headers: authHeaders(token),
+      });
+      onRefresh();
+    } catch (_) {}
+    finally { setDeleting(false); }
+  }
+
+  const catName  = catMap[tx.category] || 'Unknown';
+  const isIncome = tx.transaction_type === 'income';
+
+  return (
+    <div className="tx-item">
+      <div className="tx-body">
+        <div className="tx-title">{tx.description || <em style={{color:'#aaa'}}>No description</em>}</div>
+        <div className="tx-meta">
+          <span className={isIncome ? 'badge badge-income' : 'badge badge-expense'}>
+            {isIncome ? 'Income' : 'Expense'}
+          </span>
+          <span className="badge badge-cat">{catName}</span>
+          <span className="tx-date">{tx.date}</span>
+        </div>
+      </div>
+      <div className={`tx-amount ${tx.transaction_type}`}>
+        {isIncome ? '+' : '−'}{fmt(tx.amount)}
+      </div>
+      <button
+        className="btn-danger btn-sm"
+        onClick={deleteTransaction}
+        disabled={deleting}
+        style={{flexShrink:0}}
+      >
+        {deleting ? '…' : 'Delete'}
+      </button>
+    </div>
+  );
+}
+
+function TransactionList({ token, catMap, refreshKey }) {
+  const [transactions, setTx] = useState([]);
+  const [search, setSearch]   = useState('');
+  const [typeFilter, setType] = useState('');
+  const [ordering, setOrder]  = useState('-date');
+  const [page, setPage]       = useState(1);
+  const [total, setTotal]     = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+
+  const PAGE_SIZE = 10;
+
+  const fetchTx = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams({ page, ordering });
+      if (search)     params.set('search', search);
+      if (typeFilter) params.set('transaction_type', typeFilter);
+      const res = await fetch(`${API}/transactions/?${params}`, {
+        headers: authHeaders(token),
+      });
+      if (!res.ok) throw new Error('Failed to load transactions');
+      const data = await res.json();
+      setTx(data.results ?? data);
+      setTotal(data.count ?? (data.results ?? data).length);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, page, search, ordering, typeFilter, refreshKey]);
+
+  useEffect(() => { fetchTx(); }, [fetchTx]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  return (
+    <div className="card">
+      <h2>Transactions {total > 0 && <span style={{fontWeight:400, color:'#888', fontSize:'.85rem'}}>({total})</span>}</h2>
+
+      <SummaryBar transactions={transactions} />
+
+      <div className="filter-row">
+        <input
+          placeholder="Search description…"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(1); }}
+        />
+        <select value={typeFilter} onChange={e => { setType(e.target.value); setPage(1); }} style={{flexShrink:0}}>
+          <option value="">All types</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+        <select value={ordering} onChange={e => { setOrder(e.target.value); setPage(1); }} style={{flexShrink:0}}>
+          <option value="-date">Newest first</option>
+          <option value="date">Oldest first</option>
+          <option value="-amount">Highest amount</option>
+          <option value="amount">Lowest amount</option>
+        </select>
+        <button className="btn-ghost" onClick={fetchTx} title="Refresh" style={{flexShrink:0}}>↻</button>
+      </div>
+
+      <Alert msg={error} type="error" />
+
+      {loading && <p style={{color:'#888', fontSize:'.85rem', textAlign:'center', padding:'12px 0'}}>Loading…</p>}
+
+      {!loading && transactions.length === 0 && (
+        <p style={{color:'#aaa', fontSize:'.85rem', textAlign:'center', padding:'20px 0'}}>No transactions found.</p>
+      )}
+
+      {transactions.map(tx => (
+        <TransactionItem key={tx.id} tx={tx} token={token} catMap={catMap} onRefresh={fetchTx} />
+      ))}
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button className="btn-ghost btn-sm" onClick={() => setPage(p => p-1)} disabled={page === 1}>← Prev</button>
+          <span>Page {page} of {totalPages}</span>
+          <button className="btn-ghost btn-sm" onClick={() => setPage(p => p+1)} disabled={page === totalPages}>Next →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryManager({ token, categories, onRefresh }) {
+  const [open, setOpen]       = useState(false);
+  const [name, setName]       = useState('');
+  const [type, setType]       = useState('expense');
+  const [msg, setMsg]         = useState('');
+  const [msgType, setMsgType] = useState('ok');
+  const [loading, setLoading] = useState(false);
+
+  async function addCategory(e) {
+    e.preventDefault();
+    setLoading(true);
+    setMsg('');
+    try {
+      const res = await fetch(`${API}/categories/`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ name, type }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || JSON.stringify(data) || 'Failed to create category');
+      }
+      setMsg('Category added!');
+      setMsgType('ok');
+      setName('');
+      onRefresh();
+    } catch (err) {
+      setMsg(err.message);
+      setMsgType('error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteCategory(id, catName) {
+    if (!confirm(`Delete category "${catName}"?`)) return;
+    try {
+      await fetch(`${API}/categories/${id}/`, {
+        method: 'DELETE',
+        headers: authHeaders(token),
+      });
+      onRefresh();
+    } catch (_) {}
+  }
+
+  return (
+    <div className="card">
+      <div className="section-toggle" onClick={() => setOpen(o => !o)}>
+        <h2>
+          Categories
+          {categories.length > 0 && <span style={{fontWeight:400, color:'#888', fontSize:'.85rem'}}> ({categories.length})</span>}
+        </h2>
+        <span style={{color:'#888', fontSize:'.85rem'}}>{open ? '▲ Hide' : '▼ Show'}</span>
+      </div>
+
+      {open && (
+        <div className="section-body">
+          <Alert msg={msg} type={msgType} />
+          <form onSubmit={addCategory} style={{display:'flex', gap:8, marginBottom:16, flexWrap:'wrap'}}>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Category name"
+              required
+              style={{flex:1, minWidth:120}}
+            />
+            <select value={type} onChange={e => setType(e.target.value)} style={{flexShrink:0}}>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+            <button className="btn-primary" disabled={loading} style={{flexShrink:0}}>
+              {loading ? '…' : '+ Add'}
+            </button>
+          </form>
+
+          {categories.length === 0 && (
+            <p style={{color:'#aaa', fontSize:'.85rem', textAlign:'center', padding:'12px 0'}}>No categories yet.</p>
+          )}
+
+          {categories.map(c => (
+            <div key={c.id} className="cat-item">
+              <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                <span className={c.type === 'income' ? 'badge badge-income' : 'badge badge-expense'}>
+                  {c.type === 'income' ? 'Income' : 'Expense'}
+                </span>
+                <span style={{fontSize:'.88rem'}}>{c.name}</span>
+              </div>
+              <button className="btn-danger btn-sm" onClick={() => deleteCategory(c.id, c.name)}>Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── App ─────────────────────────────────────────────────────────────────────
+
+function App() {
+  const [token, setToken]       = useState(() => sessionStorage.getItem('bg_access') || '');
+  const [refresh, setRefresh]   = useState(() => sessionStorage.getItem('bg_refresh') || '');
+  const [username, setUsername] = useState(() => sessionStorage.getItem('bg_user') || '');
+  const [categories, setCategories] = useState([]);
+  const [txKey, setTxKey]       = useState(0);
+
+  function handleLogin(access, refreshToken, user) {
+    sessionStorage.setItem('bg_access', access);
+    sessionStorage.setItem('bg_refresh', refreshToken);
+    sessionStorage.setItem('bg_user', user);
+    setToken(access);
+    setRefresh(refreshToken);
+    setUsername(user);
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch(`${API}/auth/logout/`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ refresh }),
+      });
+    } catch (_) {}
+    sessionStorage.clear();
+    setToken('');
+    setRefresh('');
+    setUsername('');
+    setCategories([]);
+  }
+
+  const fetchCategories = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/categories/?page_size=100`, {
+        headers: authHeaders(token),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCategories(data.results ?? data);
+    } catch (_) {}
+  }, [token]);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
+
+  return (
+    <>
+      <header>
+        <h1>Budgie</h1>
+        {token
+          ? <div style={{display:'flex', alignItems:'center', gap:12}}>
+              <span>Signed in as <strong>{username}</strong></span>
+              <button className="logout-btn" onClick={handleLogout}>Sign out</button>
+            </div>
+          : <span>Demo UI</span>
+        }
+      </header>
+
+      {!token
+        ? <LoginPage onLogin={handleLogin} />
+        : <div className="container">
+            <CreateTransactionForm
+              token={token}
+              categories={categories}
+              onCreated={() => { setTxKey(k => k+1); fetchCategories(); }}
+            />
+            <CategoryManager
+              token={token}
+              categories={categories}
+              onRefresh={fetchCategories}
+            />
+            <TransactionList
+              token={token}
+              catMap={catMap}
+              refreshKey={txKey}
+            />
+          </div>
+      }
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+{% endverbatim %}
+</body>
+</html>
