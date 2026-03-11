@@ -8,6 +8,11 @@ class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    transaction_type = models.CharField(
+        max_length=20,
+        choices=[('income', 'Income'), ('expense', 'Expense')],
+        default='expense',
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateField()
     description = models.TextField(blank=True)
